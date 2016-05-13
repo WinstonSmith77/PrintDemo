@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Graphics.Printing;
 using Windows.UI.WebUI;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Printing;
 
@@ -14,6 +15,7 @@ namespace PrintDemo
     {
         private PrintDocument _printDocument;
         private IPrintDocumentSource _printDocumentSource;
+        private PrintTaskOptions _printingOptions;
 
         public async void Print()
         {
@@ -47,21 +49,39 @@ namespace PrintDemo
 
         private void AddPrintPages(object sender, AddPagesEventArgs e)
         {
+            for (int i = 0; i < _numberOfPages; i++)
+            {
+                _printDocument.AddPage(CreatePreviewPage(i));
+            }
 
+            PrintDocument printDoc = (PrintDocument)sender;
+
+            // Indicate that all of the print pages have been provided
+            printDoc.AddPagesComplete();
         }
 
         private void GetPrintPreviewPage(object sender, GetPreviewPageEventArgs e)
         {
             var doc = GetPrintDoc(sender);
+            doc.SetPreviewPage(e.PageNumber, CreatePreviewPage(e.PageNumber));
+        }
 
-            doc.SetPreviewPage(e.PageNumber, new TextBlock { Text = e.PageNumber.ToString() });
+        private UIElement CreatePreviewPage(int index)
+        {
+            var page = _printingOptions.GetPageDescription(0);
+            var textblock = new TextBlock { Text = "Page" + index };
+
+            return new Viewbox { Child = textblock, Width = page.PageSize.Width, Height = page.PageSize.Height };
         }
 
         private void CreatePrintPreviewPages(object sender, PaginateEventArgs e)
         {
+            _printingOptions = e.PrintTaskOptions;
             var doc = GetPrintDoc(sender);
-            doc.SetPreviewPageCount(10, PreviewPageCountType.Final);
+            doc.SetPreviewPageCount(_numberOfPages, PreviewPageCountType.Final);
         }
+
+        private const int _numberOfPages = 10;
 
         private static PrintDocument GetPrintDoc(object sender)
         {
