@@ -13,7 +13,7 @@ namespace PrintDemo
 {
     public class PrintStuff
     {
-        private PrintDocument _printDocument;
+
         private IPrintDocumentSource _printDocumentSource;
         private PrintTaskOptions _printingOptions;
 
@@ -21,20 +21,18 @@ namespace PrintDemo
         {
             var manager = PrintManager.GetForCurrentView();
 
-            _printDocument = new PrintDocument();
-            _printDocumentSource = _printDocument.DocumentSource;
-            _printDocument.Paginate += CreatePrintPreviewPages;
-            _printDocument.GetPreviewPage += GetPrintPreviewPage;
-            _printDocument.AddPages += AddPrintPages;
+            var printDocument = new PrintDocument();
+            _printDocumentSource = printDocument.DocumentSource;
+            printDocument.Paginate += CreatePrintPreviewPages;
+            printDocument.GetPreviewPage += GetPrintPreviewPage;
+            printDocument.AddPages += AddPrintPages;
 
             manager.PrintTaskRequested += Manager_PrintTaskRequested;
             try
             {
                 try
                 {
-                    var result = await PrintManager.ShowPrintUIAsync();
-
-                    await ShowInfoDialog(result);
+                    await PrintManager.ShowPrintUIAsync();
                 }
                 catch
                 {
@@ -49,15 +47,15 @@ namespace PrintDemo
 
         private void AddPrintPages(object sender, AddPagesEventArgs e)
         {
+            var doc = GetPrintDoc(sender);
+
             for (int i = 0; i < _numberOfPages; i++)
             {
-                _printDocument.AddPage(CreatePreviewPage(i));
+                doc.AddPage(CreatePreviewPage(i));
             }
 
-            PrintDocument printDoc = (PrintDocument)sender;
-
             // Indicate that all of the print pages have been provided
-            printDoc.AddPagesComplete();
+            doc.AddPagesComplete();
         }
 
         private void GetPrintPreviewPage(object sender, GetPreviewPageEventArgs e)
@@ -102,10 +100,9 @@ namespace PrintDemo
 
         private void Manager_PrintTaskRequested(PrintManager sender, PrintTaskRequestedEventArgs e)
         {
-            var printTask = e.Request.CreatePrintTask("C# Printing SDK Sample", sourceRequested =>
+            e.Request.CreatePrintTask("C# Printing SDK Sample", sourceRequested =>
             {
                 sourceRequested.SetSource(_printDocumentSource);
-
             });
         }
     }
