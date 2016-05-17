@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Graphics.Printing;
 using Windows.Graphics.Printing.OptionDetails;
+using Windows.UI.Core;
+using Windows.UI.Text;
 using Windows.UI.WebUI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -14,6 +16,12 @@ namespace PrintDemo
 {
     public class PrintStuff
     {
+        private readonly Action<Action> _dispatchOnUIThread;
+
+        public PrintStuff(CoreDispatcher dispatcher)
+        {
+            _dispatchOnUIThread = action => dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => action() );
+        }
 
         private IPrintDocumentSource _printDocumentSource;
         private PrintTaskOptions _printingOptions;
@@ -68,9 +76,8 @@ namespace PrintDemo
         private UIElement CreatePreviewPage(int index)
         {
             var page = _printingOptions.GetPageDescription(0);
-            var textblock = new TextBlock { Text = "Page" + index };
-
-            return new Viewbox { Child = textblock, Width = page.PageSize.Width, Height = page.PageSize.Height };
+            var textblock = new TextBlock { Text = "Page" + index , FontWeight = _isBold ? FontWeights.Bold : FontWeights.Normal};
+            return new Viewbox { Child = textblock, Width = page.PageSize.Width, Height = page.PageSize.Height};
         }
 
         private void CreatePrintPreviewPages(object sender, PaginateEventArgs e)
@@ -78,9 +85,12 @@ namespace PrintDemo
             _printingOptions = e.PrintTaskOptions;
             var doc = GetPrintDoc(sender);
             doc.SetPreviewPageCount(_numberOfPages, PreviewPageCountType.Final);
+
+            _invalidatePreview = () => _dispatchOnUIThread(() => doc.InvalidatePreview());
         }
 
         private const int _numberOfPages = 10;
+       
 
         private static PrintDocument GetPrintDoc(object sender)
         {
@@ -99,9 +109,10 @@ namespace PrintDemo
             await noPrintingDialog.ShowAsync();
         }
 
+        private const string BoldStyle = "Bold";
+
         private void Manager_PrintTaskRequested(PrintManager sender, PrintTaskRequestedEventArgs e)
         {
-
             PrintTask printTask = null;
             printTask = e.Request.CreatePrintTask("C# Printing SDK Sample", sourceRequested =>
              {
@@ -118,8 +129,30 @@ namespace PrintDemo
                      }
                  }
 
+                 PrintCustomItemListOptionDetails pageFormat = printDetailedOptions.CreateItemListOption(StyleParameter, StyleParameter);
+                 pageFormat.AddItem(StyleNormal, StyleNormal);
+                 pageFormat.AddItem(BoldStyle, BoldStyle);
+                 printDetailedOptions.DisplayedOptions.Add(StyleParameter);
+
+
+                 printDetailedOptions.OptionChanged += PrintDetailedOptions_OptionChanged;
+
                  sourceRequested.SetSource(_printDocumentSource);
              });
         }
+
+        private void PrintDetailedOptions_OptionChanged(PrintTaskOptionDetails sender, PrintTaskOptionChangedEventArgs args)
+        {
+            if (args.OptionId != null && args.OptionId.Equals(StyleParameter))
+            {
+                _isBold = sender.Options[StyleParameter].Value.Equals(BoldStyle);
+                _invalidatePreview?.Invoke();
+            }
+        }
+
+        private Action _invalidatePreview;
+        private bool _isBold;
+        private const string StyleParameter = "Style";
+        private const string StyleNormal = "Normal";
     }
 }

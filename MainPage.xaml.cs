@@ -30,7 +30,7 @@ namespace PrintDemo
 
         private  void Button_Click(object sender, RoutedEventArgs e)
         {
-            new PrintStuff().Print();
+            new PrintStuff(Dispatcher).Print();
         }
     }
 }
