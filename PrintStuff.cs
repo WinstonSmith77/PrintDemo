@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Graphics.Printing;
+using Windows.Graphics.Printing.OptionDetails;
 using Windows.UI.WebUI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -100,10 +101,25 @@ namespace PrintDemo
 
         private void Manager_PrintTaskRequested(PrintManager sender, PrintTaskRequestedEventArgs e)
         {
-            e.Request.CreatePrintTask("C# Printing SDK Sample", sourceRequested =>
-            {
-                sourceRequested.SetSource(_printDocumentSource);
-            });
+
+            PrintTask printTask = null;
+            printTask = e.Request.CreatePrintTask("C# Printing SDK Sample", sourceRequested =>
+             {
+                 var printDetailedOptions = PrintTaskOptionDetails.GetFromPrintTaskOptions(printTask.Options);
+                 var allOptions = printDetailedOptions.Options.ToList();
+
+                 printDetailedOptions.DisplayedOptions.Clear();
+
+                 foreach (KeyValuePair<string, IPrintOptionDetails> option in allOptions)
+                 {
+                     // if (option.Value.OptionType == PrintOptionType.ItemList)
+                     {
+                         printDetailedOptions.DisplayedOptions.Add(option.Key);
+                     }
+                 }
+
+                 sourceRequested.SetSource(_printDocumentSource);
+             });
         }
     }
 }
