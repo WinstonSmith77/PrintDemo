@@ -7,14 +7,28 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <StackPanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <ContentControl HorizontalContentAlignment="Center">Header</ContentControl>
+    <RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <ContentControl x:Name="Header"
+            RelativePanel.AlignLeftWithPanel="True"
+            RelativePanel.AlignRightWithPanel="True"
+            RelativePanel.AlignTopWithPanel="True"
+            
+            HorizontalContentAlignment="Center">Header</ContentControl>
 
-        <StackPanel Orientation="Vertical" x:Name="PrintArea" Margin="20"></StackPanel>
-        <StackPanel Orientation="Horizontal" >
+        <StackPanel Orientation="Vertical" x:Name="PrintArea" Margin="20" 
+            RelativePanel.Below="Header"   
+            RelativePanel.Above="Footer"        
+            RelativePanel.AlignLeftWithPanel="True"
+            RelativePanel.AlignRightWithPanel="True"
+                    
+                    />
+        <StackPanel Orientation="Horizontal" x:Name="Footer"
+            RelativePanel.AlignLeftWithPanel="True"
+            RelativePanel.AlignRightWithPanel="True"
+            RelativePanel.AlignBottomWithPanel="True" HorizontalAlignment="Center">
             <TextBlock Text="{x:Bind Page}" />
             <TextBlock>/</TextBlock>
             <TextBlock Text="{x:Bind TotalPages}" />
         </StackPanel>
-    </StackPanel>
+    </RelativePanel>
 </Page>

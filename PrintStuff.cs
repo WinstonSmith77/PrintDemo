@@ -94,7 +94,7 @@ namespace PrintDemo
         private List<UIElement> CreatePages()
         {
             var pageInfo = _printingOptions.GetPageDescription(0);
-            var items = Enumerable.Range(6, 320).ToList();
+            var items = Enumerable.Range(6, 31).ToList();
 
             var result = new List<UIElement>();
 
@@ -104,10 +104,9 @@ namespace PrintDemo
             foreach (int item in items)
             {
                 page = CheckForNewPage(page, pageInfo, result);
-
-                var remainingheight = pageInfo.PageSize.Height - CalcUsedHeight(page);
-                GetChildrenContainer(page).Children.Add(new ContentControl { Content = item, FontSize = remainingheight < 100 ? 30 : 50 });
+                GetChildrenContainer(page).Children.Add(new ContentControl { Content = item, FontSize = 50 });
             }
+            CheckForNewPage(page, pageInfo, result);
 
             return result;
         }
@@ -143,8 +142,8 @@ namespace PrintDemo
 
         private PrintPage CreateEmptyPage(int page)
         {
-           
-            return new PrintPage(page, ()=> _pages.Count);
+
+            return new PrintPage(page, () => _pages.Count);
         }
 
 
