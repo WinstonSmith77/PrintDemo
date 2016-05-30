@@ -55,10 +55,7 @@ namespace PrintDemo
         {
             var doc = GetPrintDoc(sender);
 
-            for (int i = 0; i < _pages.Count; i++)
-            {
-                doc.AddPage(CreatePreviewPage(i));
-            }
+            _pages.ForEach(doc.AddPage);
 
             // Indicate that all of the print pages have been provided
             doc.AddPagesComplete();
@@ -103,10 +100,9 @@ namespace PrintDemo
 
             foreach (int item in items)
             {
-                page = CheckForNewPage(page, pageInfo, result);
                 GetChildrenContainer(page).Children.Add(new ContentControl { Content = item, FontSize = 50 });
+                page = CheckForNewPage(page, pageInfo, result);
             }
-            CheckForNewPage(page, pageInfo, result);
 
             return result;
         }

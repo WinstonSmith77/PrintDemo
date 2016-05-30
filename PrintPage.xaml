@@ -1,4 +1,5 @@
 ﻿<Page
+   
     x:Class="PrintDemo.PrintPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -7,7 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <RelativePanel Margin="30, 30, 30, 60" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <ContentControl x:Name="Header"
             RelativePanel.AlignLeftWithPanel="True"
             RelativePanel.AlignRightWithPanel="True"
