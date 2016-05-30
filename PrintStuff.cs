@@ -16,13 +16,6 @@ namespace PrintDemo
 {
     public class PrintStuff
     {
-        private readonly Action<Action> _dispatchOnUIThread;
-
-        public PrintStuff(CoreDispatcher dispatcher)
-        {
-            _dispatchOnUIThread = action => dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => action() );
-        }
-
         private IPrintDocumentSource _printDocumentSource;
         private PrintTaskOptions _printingOptions;
 
@@ -71,14 +64,17 @@ namespace PrintDemo
         {
             var doc = GetPrintDoc(sender);
             doc.SetPreviewPage(e.PageNumber, CreatePreviewPage(e.PageNumber));
+            
         }
 
         private UIElement CreatePreviewPage(int index)
         {
             var page = _printingOptions.GetPageDescription(0);
-            var textblock = new TextBlock { Text = "Page" + index , FontWeight = _isBold ? FontWeights.Bold : FontWeights.Normal};
-            return new Viewbox { Child = textblock, Width = page.PageSize.Width, Height = page.PageSize.Height};
+            var textBlock = new TextBlock { Text = "Page" + index , FontWeight = _isBold ? FontWeights.Bold : FontWeights.Normal};
+
+            return new Viewbox { Child = textBlock, Width = page.PageSize.Width, Height = page.PageSize.Height};
         }
+
 
         private void CreatePrintPreviewPages(object sender, PaginateEventArgs e)
         {
@@ -86,7 +82,8 @@ namespace PrintDemo
             var doc = GetPrintDoc(sender);
             doc.SetPreviewPageCount(_numberOfPages, PreviewPageCountType.Final);
 
-            _invalidatePreview = () => _dispatchOnUIThread(() => doc.InvalidatePreview());
+            _invalidatePreview =
+                () => doc.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => doc.InvalidatePreview());
         }
 
         private const int _numberOfPages = 10;
@@ -108,8 +105,7 @@ namespace PrintDemo
             };
             await noPrintingDialog.ShowAsync();
         }
-
-        private const string BoldStyle = "Bold";
+      
 
         private void Manager_PrintTaskRequested(PrintManager sender, PrintTaskRequestedEventArgs e)
         {
@@ -121,6 +117,8 @@ namespace PrintDemo
 
                  printDetailedOptions.DisplayedOptions.Clear();
 
+                var bal = allOptions.Select(item => item.Key).Aggregate("", (result, item) => result + (item + Environment.NewLine));
+
                  foreach (KeyValuePair<string, IPrintOptionDetails> option in allOptions)
                  {
                      // if (option.Value.OptionType == PrintOptionType.ItemList)
@@ -129,16 +127,21 @@ namespace PrintDemo
                      }
                  }
 
-                 PrintCustomItemListOptionDetails pageFormat = printDetailedOptions.CreateItemListOption(StyleParameter, StyleParameter);
-                 pageFormat.AddItem(StyleNormal, StyleNormal);
-                 pageFormat.AddItem(BoldStyle, BoldStyle);
-                 printDetailedOptions.DisplayedOptions.Add(StyleParameter);
-
-
-                 printDetailedOptions.OptionChanged += PrintDetailedOptions_OptionChanged;
+                 AddStyleParameter(printDetailedOptions);
 
                  sourceRequested.SetSource(_printDocumentSource);
              });
+        }
+
+        private void AddStyleParameter(PrintTaskOptionDetails printDetailedOptions)
+        {
+            var pageFormat = printDetailedOptions.CreateItemListOption(StyleParameter,
+                StyleParameter);
+            pageFormat.AddItem(StyleNormal, StyleNormal);
+            pageFormat.AddItem(BoldStyle, BoldStyle);
+            printDetailedOptions.DisplayedOptions.Add(StyleParameter);
+
+            printDetailedOptions.OptionChanged += PrintDetailedOptions_OptionChanged;
         }
 
         private void PrintDetailedOptions_OptionChanged(PrintTaskOptionDetails sender, PrintTaskOptionChangedEventArgs args)
@@ -154,5 +157,6 @@ namespace PrintDemo
         private bool _isBold;
         private const string StyleParameter = "Style";
         private const string StyleNormal = "Normal";
+        private const string BoldStyle = "Bold";
     }
 }
