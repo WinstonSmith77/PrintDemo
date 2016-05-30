@@ -94,11 +94,11 @@ namespace PrintDemo
         private List<UIElement> CreatePages()
         {
             var pageInfo = _printingOptions.GetPageDescription(0);
-            var items = Enumerable.Range(6, 145).ToList();
+            var items = Enumerable.Range(6, 320).ToList();
 
             var result = new List<UIElement>();
 
-            var page = CreateEmptyPage();
+            var page = CreateEmptyPage(1);
             result.Add(page);
 
             foreach (int item in items)
@@ -106,42 +106,30 @@ namespace PrintDemo
                 page = CheckForNewPage(page, pageInfo, result);
 
                 var remainingheight = pageInfo.PageSize.Height - CalcUsedHeight(page);
-                GetChildrenContainer(page).Add(new ContentControl { Content = item, FontSize = remainingheight < 100 ? 30 : 50 });
+                GetChildrenContainer(page).Children.Add(new ContentControl { Content = item, FontSize = remainingheight < 100 ? 30 : 50 });
             }
-
-
-            /*  for (int index = 0; index < _numberOfPages; index++)
-              {
-
-                  var textBlock = new TextBlock { Text = "Page" + (index + 1) + "/" + _numberOfPages, FontWeight = _isBold ? FontWeights.Bold : FontWeights.Normal };
-
-                  var newPage = new Viewbox { Child = textBlock, Width = pageInfo.PageSize.Width, Height = pageInfo.PageSize.Height };
-
-                  result.Add(newPage);
-              }*/
 
             return result;
         }
 
-        private static UIElementCollection GetChildrenContainer(Page page)
+        private static Panel GetChildrenContainer(Page page)
         {
-            return ((StackPanel)page.Content).Children;
+            return (Panel)(page.FindName("PrintArea"));
         }
 
-        private Page CheckForNewPage(Page page, PrintPageDescription pageInfo, List<UIElement> result)
+        private PrintPage CheckForNewPage(PrintPage page, PrintPageDescription pageInfo, List<UIElement> result)
         {
             var height = CalcUsedHeight(page);
 
-
             if (height > pageInfo.PageSize.Height)
             {
-                var oldItemList = GetChildrenContainer(page);
+                var oldItemList = GetChildrenContainer(page).Children;
                 var lastItemOldPage = oldItemList.Last();
                 oldItemList.Remove(lastItemOldPage);
 
-                page = CreateEmptyPage();
+                page = CreateEmptyPage(page.Page + 1);
                 result.Add(page);
-                GetChildrenContainer(page).Add(lastItemOldPage);
+                GetChildrenContainer(page).Children.Add(lastItemOldPage);
             }
             return page;
         }
@@ -150,15 +138,13 @@ namespace PrintDemo
         {
             page.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
 
-            var height = page.DesiredSize.Height;
-            return height;
+            return page.DesiredSize.Height;
         }
 
-        private Page CreateEmptyPage()
+        private PrintPage CreateEmptyPage(int page)
         {
-            var page = new Page { Content = new StackPanel { Orientation = Orientation.Vertical } };
-
-            return page;
+           
+            return new PrintPage(page, ()=> _pages.Count);
         }
 
 
