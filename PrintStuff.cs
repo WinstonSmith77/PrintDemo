@@ -106,7 +106,7 @@ namespace PrintDemo
                 page = CheckForNewPage(page, pageInfo, result);
 
                 var remainingheight = pageInfo.PageSize.Height - CalcUsedHeight(page);
-                GetChildrenContainer(page).Add(new ContentControl { Content = item, FontSize = remainingheight < 100 ? 20 : 50 });
+                GetChildrenContainer(page).Add(new ContentControl { Content = item, FontSize = remainingheight < 100 ? 30 : 50 });
             }
 
 
@@ -138,11 +138,6 @@ namespace PrintDemo
                 var oldItemList = GetChildrenContainer(page);
                 var lastItemOldPage = oldItemList.Last();
                 oldItemList.Remove(lastItemOldPage);
-
-
-                var contentControl = lastItemOldPage as ContentControl;
-
-                (contentControl?.Content as CanUndoShrink)?.UndoShrink();
 
                 page = CreateEmptyPage();
                 result.Add(page);
