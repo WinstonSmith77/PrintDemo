@@ -64,30 +64,47 @@ namespace PrintDemo
         {
             var doc = GetPrintDoc(sender);
             doc.SetPreviewPage(e.PageNumber, CreatePreviewPage(e.PageNumber));
-            
+
         }
 
         private UIElement CreatePreviewPage(int index)
         {
-            var page = _printingOptions.GetPageDescription(0);
-            var textBlock = new TextBlock { Text = "Page" + index , FontWeight = _isBold ? FontWeights.Bold : FontWeights.Normal};
-
-            return new Viewbox { Child = textBlock, Width = page.PageSize.Width, Height = page.PageSize.Height};
+            return _pages[index - 1];
         }
 
+        private List<UIElement> _pages = new List<UIElement>();
 
         private void CreatePrintPreviewPages(object sender, PaginateEventArgs e)
         {
             _printingOptions = e.PrintTaskOptions;
             var doc = GetPrintDoc(sender);
-            doc.SetPreviewPageCount(_numberOfPages, PreviewPageCountType.Final);
+
+            _pages = CreatePages();
+
+            doc.SetPreviewPageCount(_pages.Count, PreviewPageCountType.Final);
 
             _invalidatePreview =
                 () => doc.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => doc.InvalidatePreview());
         }
 
+        private List<UIElement> CreatePages()
+        {
+            var result = new List<UIElement>();
+            for (int index = 0; index < _numberOfPages; index++)
+            {
+                var page = _printingOptions.GetPageDescription(0);
+                var textBlock = new TextBlock { Text = "Page" + (index + 1) + "/" + _numberOfPages, FontWeight = _isBold ? FontWeights.Bold : FontWeights.Normal };
+
+                var newPage = new Viewbox { Child = textBlock, Width = page.PageSize.Width, Height = page.PageSize.Height };
+
+                result.Add(newPage);
+            }
+
+            return result;
+        }
+
         private const int _numberOfPages = 10;
-       
+
 
         private static PrintDocument GetPrintDoc(object sender)
         {
@@ -105,7 +122,7 @@ namespace PrintDemo
             };
             await noPrintingDialog.ShowAsync();
         }
-      
+
 
         private void Manager_PrintTaskRequested(PrintManager sender, PrintTaskRequestedEventArgs e)
         {
@@ -117,7 +134,7 @@ namespace PrintDemo
 
                  printDetailedOptions.DisplayedOptions.Clear();
 
-                var bal = allOptions.Select(item => item.Key).Aggregate("", (result, item) => result + (item + Environment.NewLine));
+                 var bal = allOptions.Select(item => item.Key).Aggregate("", (result, item) => result + (item + Environment.NewLine));
 
                  foreach (KeyValuePair<string, IPrintOptionDetails> option in allOptions)
                  {
