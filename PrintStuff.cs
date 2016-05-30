@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Foundation;
 using Windows.Graphics.Printing;
 using Windows.Graphics.Printing.OptionDetails;
 using Windows.UI.Core;
@@ -14,6 +16,8 @@ using Windows.UI.Xaml.Printing;
 
 namespace PrintDemo
 {
+
+
     public class PrintStuff
     {
         private IPrintDocumentSource _printDocumentSource;
@@ -51,7 +55,7 @@ namespace PrintDemo
         {
             var doc = GetPrintDoc(sender);
 
-            for (int i = 0; i < _numberOfPages; i++)
+            for (int i = 0; i < _pages.Count; i++)
             {
                 doc.AddPage(CreatePreviewPage(i));
             }
@@ -89,21 +93,78 @@ namespace PrintDemo
 
         private List<UIElement> CreatePages()
         {
+            var pageInfo = _printingOptions.GetPageDescription(0);
+            var items = Enumerable.Range(6, 145).ToList();
+
             var result = new List<UIElement>();
-            for (int index = 0; index < _numberOfPages; index++)
+
+            var page = CreateEmptyPage();
+            result.Add(page);
+
+            foreach (int item in items)
             {
-                var page = _printingOptions.GetPageDescription(0);
-                var textBlock = new TextBlock { Text = "Page" + (index + 1) + "/" + _numberOfPages, FontWeight = _isBold ? FontWeights.Bold : FontWeights.Normal };
+                page = CheckForNewPage(page, pageInfo, result);
 
-                var newPage = new Viewbox { Child = textBlock, Width = page.PageSize.Width, Height = page.PageSize.Height };
-
-                result.Add(newPage);
+                var remainingheight = pageInfo.PageSize.Height - CalcUsedHeight(page);
+                GetChildrenContainer(page).Add(new ContentControl { Content = item, FontSize = remainingheight < 100 ? 20 : 50 });
             }
+
+
+            /*  for (int index = 0; index < _numberOfPages; index++)
+              {
+
+                  var textBlock = new TextBlock { Text = "Page" + (index + 1) + "/" + _numberOfPages, FontWeight = _isBold ? FontWeights.Bold : FontWeights.Normal };
+
+                  var newPage = new Viewbox { Child = textBlock, Width = pageInfo.PageSize.Width, Height = pageInfo.PageSize.Height };
+
+                  result.Add(newPage);
+              }*/
 
             return result;
         }
 
-        private const int _numberOfPages = 10;
+        private static UIElementCollection GetChildrenContainer(Page page)
+        {
+            return ((StackPanel)page.Content).Children;
+        }
+
+        private Page CheckForNewPage(Page page, PrintPageDescription pageInfo, List<UIElement> result)
+        {
+            var height = CalcUsedHeight(page);
+
+
+            if (height > pageInfo.PageSize.Height)
+            {
+                var oldItemList = GetChildrenContainer(page);
+                var lastItemOldPage = oldItemList.Last();
+                oldItemList.Remove(lastItemOldPage);
+
+
+                var contentControl = lastItemOldPage as ContentControl;
+
+                (contentControl?.Content as CanUndoShrink)?.UndoShrink();
+
+                page = CreateEmptyPage();
+                result.Add(page);
+                GetChildrenContainer(page).Add(lastItemOldPage);
+            }
+            return page;
+        }
+
+        private static double CalcUsedHeight(Page page)
+        {
+            page.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+            var height = page.DesiredSize.Height;
+            return height;
+        }
+
+        private Page CreateEmptyPage()
+        {
+            var page = new Page { Content = new StackPanel { Orientation = Orientation.Vertical } };
+
+            return page;
+        }
 
 
         private static PrintDocument GetPrintDoc(object sender)
