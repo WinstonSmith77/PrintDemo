@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -88,178 +90,21 @@ namespace PrintHelper
             var list = new List<object>();
             adapter.PageSize = new Size(control.ActualWidth, control.ActualHeight);
             FindTextBlocks(control, list);
-            var num1 = checked(list.Count - 1);
+            var num1 = list.Count - 1;
             var index = 0;
             while (index <= num1)
             {
-                Thickness thickness;
-                if (list[index] is TextBlock textBlock)
+                if (list[index] is TextProxy textBlock)
                 {
-                    FrameworkElement frameworkElement = textBlock;
-                    var num2 = 0.0;
-                    for (; frameworkElement != null; frameworkElement = (FrameworkElement)frameworkElement.Parent)
-                    {
-                        var renderTransform = frameworkElement.RenderTransform;
-                        if (renderTransform is TransformGroup transformGroup)
-                        {
-                            foreach (var transform in transformGroup.Children)
-                                if (transform is RotateTransform rotateTransform)
-                                    num2 -= rotateTransform.Angle;
-                        }
-                        else if (renderTransform is RotateTransform)
-                        {
-                            num2 -= ((RotateTransform)renderTransform).Angle;
-                        }
-                    }
-                    var font = new Font(textBlock.FontFamily.Source, textBlock.FontSize, PdfFontStyle.Italic);
-                    var generalTransform = textBlock.TransformToVisual(control);
-                    var point = generalTransform.TransformPoint(new Point(0.0, 0.0));
-                    double width;
-                    double height;
-                    if (textBlock.TextWrapping == TextWrapping.NoWrap)
-                    {
-                        width = adapter.MeasureString(textBlock.Text, font).Width;
-                        height = adapter.MeasureString(textBlock.Text, font).Height;
-                    }
-                    else
-                    {
-                        width = textBlock.ActualWidth + 10.0;
-                        height = adapter.MeasureString(textBlock.Text, font, width).Height;
-                    }
-                    var rc = new Rect(point.X, point.Y, width, height);
-                    if (num2 != 0.0)
-                        adapter.DrawString(textBlock.Text, font, ((SolidColorBrush)textBlock.Foreground).Color,
-                            rc, new StringFormat
-                            {
-                                Angle = num2
-                            });
-                    else
-                        adapter.DrawString(textBlock.Text, font, ((SolidColorBrush)textBlock.Foreground).Color,
-                            rc);
+                    HandleText(control, textBlock, adapter);
                 }
                 else if (list[index] is Border)
                 {
-                    var border = (Border)list[index];
-                    var generalTransform = border.TransformToVisual(control);
-                    var point = generalTransform.TransformPoint(new Point(0.0, 0.0));
-                    var pointArray = new[]
-                    {
-                        new Point(point.X, point.Y),
-                        new Point(point.X + border.ActualWidth, point.Y),
-                        new Point(point.X + border.ActualWidth, point.Y + border.ActualHeight),
-                        new Point(point.X, point.Y + border.ActualHeight)
-                    };
-                    var color = ((SolidColorBrush)border.BorderBrush).Color;
-                    thickness = border.BorderThickness;
-                    if (thickness.Top != 0.0)
-                    {
-                        var color1 = color;
-                        thickness = border.BorderThickness;
-                        var top = thickness.Top;
-                        var pen = new Pen(color1, top);
-                        var pt1 = pointArray[0];
-                        var pt2 = pointArray[1];
-                        adapter.DrawLine(pen, pt1, pt2);
-                    }
-                    thickness = border.BorderThickness;
-                    if (thickness.Right != 0.0)
-                    {
-                        var color1 = color;
-                        thickness = border.BorderThickness;
-                        var right = thickness.Right;
-                        var pen = new Pen(color1, right);
-                        var pt1 = pointArray[1];
-                        var pt2 = pointArray[2];
-                        adapter.DrawLine(pen, pt1, pt2);
-                    }
-                    thickness = border.BorderThickness;
-                    if (thickness.Bottom != 0.0)
-                    {
-                        var color1 = color;
-                        thickness = border.BorderThickness;
-                        var bottom = thickness.Bottom;
-                        var pen = new Pen(color1, bottom);
-                        var pt1 = pointArray[2];
-                        var pt2 = pointArray[3];
-                        adapter.DrawLine(pen, pt1, pt2);
-                    }
-                    thickness = border.BorderThickness;
-                    if (thickness.Left != 0.0)
-                    {
-                        var color1 = color;
-                        thickness = border.BorderThickness;
-                        var left = thickness.Left;
-                        var pen = new Pen(color1, left);
-                        var pt1 = pointArray[3];
-                        var pt2 = pointArray[0];
-                        adapter.DrawLine(pen, pt1, pt2);
-                    }
+                    Border(control, list, index, adapter);
                 }
                 else if (list[index] is Rectangle)
                 {
-                    var rectangle = (Rectangle)list[index];
-                    var generalTransform = rectangle.TransformToVisual(control);
-                    var point = generalTransform.TransformPoint(new Point(0.0, 0.0));
-                    var pointArray1 = new Point[4];
-                    var index1 = 0;
-                    var x1 = point.X;
-                    thickness = rectangle.Margin;
-                    var left1 = thickness.Left;
-                    var x2 = x1 + left1;
-                    var y1 = point.Y;
-                    thickness = rectangle.Margin;
-                    var top1 = thickness.Top;
-                    var y2 = y1 + top1;
-                    var point1 = new Point(x2, y2);
-                    pointArray1[index1] = point1;
-                    var index2 = 1;
-                    var num2 = point.X + rectangle.ActualWidth;
-                    thickness = rectangle.Margin;
-                    var right1 = thickness.Right;
-                    var x3 = num2 - right1;
-                    var y3 = point.Y;
-                    thickness = rectangle.Margin;
-                    var top2 = thickness.Top;
-                    var y4 = y3 + top2;
-                    var point2 = new Point(x3, y4);
-                    pointArray1[index2] = point2;
-                    var index3 = 2;
-                    var num3 = point.X + rectangle.ActualWidth;
-                    thickness = rectangle.Margin;
-                    var right2 = thickness.Right;
-                    var x4 = num3 - right2;
-                    var num4 = point.Y + rectangle.ActualHeight;
-                    thickness = rectangle.Margin;
-                    var bottom1 = thickness.Bottom;
-                    var y5 = num4 - bottom1;
-                    var point3 = new Point(x4, y5);
-                    pointArray1[index3] = point3;
-                    var index4 = 3;
-                    var x5 = point.X;
-                    thickness = rectangle.Margin;
-                    var left2 = thickness.Left;
-                    var x6 = x5 + left2;
-                    var num5 = point.Y + rectangle.ActualHeight;
-                    thickness = rectangle.Margin;
-                    var bottom2 = thickness.Bottom;
-                    var y6 = num5 - bottom2;
-                    var point4 = new Point(x6, y6);
-                    pointArray1[index4] = point4;
-                    var pointArray = pointArray1;
-                    var pen1 = new Pen(((SolidColorBrush)rectangle.Stroke).Color, rectangle.StrokeThickness)
-                    {
-                        DashStyle = DashStyle.Custom,
-                        DashPattern = rectangle.StrokeDashArray.ToArray()
-                    };
-                    var pen2 = new Pen(((SolidColorBrush)rectangle.Stroke).Color, rectangle.StrokeThickness)
-                    {
-                        DashStyle = DashStyle.Custom,
-                        DashPattern = rectangle.StrokeDashArray.ToArray()
-                    };
-                    adapter.DrawLine(pen2, pointArray[0], pointArray[1]);
-                    adapter.DrawLine(pen1, pointArray[1], pointArray[2]);
-                    adapter.DrawLine(pen2, pointArray[2], pointArray[3]);
-                    adapter.DrawLine(pen1, pointArray[3], pointArray[0]);
+                    Rectangle(control, list, index, adapter);
                 }
                 checked
                 {
@@ -270,13 +115,232 @@ namespace PrintHelper
             c1PdfDocument.SaveAsync(file);
         }
 
+        private static void HandleText(Control control, TextProxy textBlock, PDFAdapter adapter)
+        {
+            FrameworkElement frameworkElement = textBlock.FrameworkElement;
+            var num2 = 0.0;
+            for (; frameworkElement != null; frameworkElement = (FrameworkElement) frameworkElement.Parent)
+            {
+                var renderTransform = frameworkElement.RenderTransform;
+                if (renderTransform is TransformGroup transformGroup)
+                {
+                    foreach (var transform in transformGroup.Children)
+                        if (transform is RotateTransform rotateTransform)
+                            num2 -= rotateTransform.Angle;
+                }
+                else if (renderTransform is RotateTransform)
+                {
+                    num2 -= ((RotateTransform) renderTransform).Angle;
+                }
+            }
+            var font = new Font(textBlock.FontFamily.Source, textBlock.FontSize, PdfFontStyle.Italic);
+            var generalTransform = textBlock.TransformToVisual(control);
+            var point = generalTransform.TransformPoint(new Point(0.0, 0.0));
+            double width;
+            double height;
+            if (textBlock.TextWrapping == TextWrapping.NoWrap)
+            {
+                width = adapter.MeasureString(textBlock.Text, font).Width;
+                height = adapter.MeasureString(textBlock.Text, font).Height;
+            }
+            else
+            {
+                width = textBlock.ActualWidth + 10.0;
+                height = adapter.MeasureString(textBlock.Text, font, width).Height;
+            }
+            var rc = new Rect(point.X, point.Y, width, height);
+            if (num2 != 0.0)
+                adapter.DrawString(textBlock.Text, font, ((SolidColorBrush) textBlock.Foreground).Color,
+                    rc, new StringFormat
+                    {
+                        Angle = num2
+                    });
+            else
+                adapter.DrawString(textBlock.Text, font, ((SolidColorBrush) textBlock.Foreground).Color,
+                    rc);
+        }
+
+        private static void Rectangle(Control control, List<object> list, int index, PDFAdapter adapter)
+        {
+            Thickness thickness;
+            var rectangle = (Rectangle) list[index];
+            var generalTransform = rectangle.TransformToVisual(control);
+            var point = generalTransform.TransformPoint(new Point(0.0, 0.0));
+            var pointArray1 = new Point[4];
+            var index1 = 0;
+            var x1 = point.X;
+            thickness = rectangle.Margin;
+            var left1 = thickness.Left;
+            var x2 = x1 + left1;
+            var y1 = point.Y;
+            thickness = rectangle.Margin;
+            var top1 = thickness.Top;
+            var y2 = y1 + top1;
+            var point1 = new Point(x2, y2);
+            pointArray1[index1] = point1;
+            var index2 = 1;
+            var num2 = point.X + rectangle.ActualWidth;
+            thickness = rectangle.Margin;
+            var right1 = thickness.Right;
+            var x3 = num2 - right1;
+            var y3 = point.Y;
+            thickness = rectangle.Margin;
+            var top2 = thickness.Top;
+            var y4 = y3 + top2;
+            var point2 = new Point(x3, y4);
+            pointArray1[index2] = point2;
+            var index3 = 2;
+            var num3 = point.X + rectangle.ActualWidth;
+            thickness = rectangle.Margin;
+            var right2 = thickness.Right;
+            var x4 = num3 - right2;
+            var num4 = point.Y + rectangle.ActualHeight;
+            thickness = rectangle.Margin;
+            var bottom1 = thickness.Bottom;
+            var y5 = num4 - bottom1;
+            var point3 = new Point(x4, y5);
+            pointArray1[index3] = point3;
+            var index4 = 3;
+            var x5 = point.X;
+            thickness = rectangle.Margin;
+            var left2 = thickness.Left;
+            var x6 = x5 + left2;
+            var num5 = point.Y + rectangle.ActualHeight;
+            thickness = rectangle.Margin;
+            var bottom2 = thickness.Bottom;
+            var y6 = num5 - bottom2;
+            var point4 = new Point(x6, y6);
+            pointArray1[index4] = point4;
+            var pointArray = pointArray1;
+            var pen1 = new Pen(((SolidColorBrush) rectangle.Stroke).Color, rectangle.StrokeThickness)
+            {
+                DashStyle = DashStyle.Custom,
+                DashPattern = rectangle.StrokeDashArray.ToArray()
+            };
+            var pen2 = new Pen(((SolidColorBrush) rectangle.Stroke).Color, rectangle.StrokeThickness)
+            {
+                DashStyle = DashStyle.Custom,
+                DashPattern = rectangle.StrokeDashArray.ToArray()
+            };
+            adapter.DrawLine(pen2, pointArray[0], pointArray[1]);
+            adapter.DrawLine(pen1, pointArray[1], pointArray[2]);
+            adapter.DrawLine(pen2, pointArray[2], pointArray[3]);
+            adapter.DrawLine(pen1, pointArray[3], pointArray[0]);
+        }
+
+        private static void Border(Control control, List<object> list, int index, PDFAdapter adapter)
+        {
+            Thickness thickness;
+            var border = (Border) list[index];
+            var generalTransform = border.TransformToVisual(control);
+            var point = generalTransform.TransformPoint(new Point(0.0, 0.0));
+            var pointArray = new[]
+            {
+                new Point(point.X, point.Y),
+                new Point(point.X + border.ActualWidth, point.Y),
+                new Point(point.X + border.ActualWidth, point.Y + border.ActualHeight),
+                new Point(point.X, point.Y + border.ActualHeight)
+            };
+            var color = ((SolidColorBrush) border.BorderBrush).Color;
+            thickness = border.BorderThickness;
+            if (thickness.Top != 0.0)
+            {
+                var color1 = color;
+                thickness = border.BorderThickness;
+                var top = thickness.Top;
+                var pen = new Pen(color1, top);
+                var pt1 = pointArray[0];
+                var pt2 = pointArray[1];
+                adapter.DrawLine(pen, pt1, pt2);
+            }
+            thickness = border.BorderThickness;
+            if (thickness.Right != 0.0)
+            {
+                var color1 = color;
+                thickness = border.BorderThickness;
+                var right = thickness.Right;
+                var pen = new Pen(color1, right);
+                var pt1 = pointArray[1];
+                var pt2 = pointArray[2];
+                adapter.DrawLine(pen, pt1, pt2);
+            }
+            thickness = border.BorderThickness;
+            if (thickness.Bottom != 0.0)
+            {
+                var color1 = color;
+                thickness = border.BorderThickness;
+                var bottom = thickness.Bottom;
+                var pen = new Pen(color1, bottom);
+                var pt1 = pointArray[2];
+                var pt2 = pointArray[3];
+                adapter.DrawLine(pen, pt1, pt2);
+            }
+            thickness = border.BorderThickness;
+            if (thickness.Left != 0.0)
+            {
+                var color1 = color;
+                thickness = border.BorderThickness;
+                var left = thickness.Left;
+                var pen = new Pen(color1, left);
+                var pt1 = pointArray[3];
+                var pt2 = pointArray[0];
+                adapter.DrawLine(pen, pt1, pt2);
+            }
+        }
+
+
+        private class TextProxy
+        {
+
+            public TextProxy(TextBlock text)
+            {
+                Text = text.Text;
+                FontFamily = text.FontFamily;
+                FontSize = text.FontSize;
+                TextWrapping = text.TextWrapping;
+                Foreground = text.Foreground;
+
+                FrameworkElementStuff(text);
+            }
+
+            public TextProxy(ContentControl contentControl)
+            {
+                Text = contentControl.Content.ToString();
+                FontFamily = FontFamily.XamlAutoFontFamily;
+                TextWrapping = TextWrapping.NoWrap;
+                FontSize = 15;
+                Foreground = contentControl.Foreground;
+
+                FrameworkElementStuff(contentControl);
+            }
+
+            private void FrameworkElementStuff(FrameworkElement text)
+            {
+                TransformToVisual = text.TransformToVisual;
+                ActualWidth = text.ActualWidth;
+                FrameworkElement = text;
+            }
+
+            public FrameworkElement FrameworkElement { get; private set; }
+            public double ActualWidth { get; private set; }
+
+            public Brush Foreground { get; private set; }
+
+            public double FontSize { get; private set; }
+            public TextWrapping TextWrapping { get; }
+            public Func<UIElement, GeneralTransform> TransformToVisual { get; private set; }
+
+            public string Text { get; private set; }
+            public FontFamily FontFamily { get; private set; }
+        }
+
         private static void FindTextBlocks(object uiElement, IList<object> foundOnes)
         {
             if (uiElement is TextBlock textBlock)
             {
                 if (textBlock.Visibility != 0)
                     return;
-                foundOnes.Add(textBlock);
+                foundOnes.Add(new TextProxy(textBlock));
             }
             else if (uiElement is Panel)
             {
@@ -299,7 +363,15 @@ namespace PrintHelper
                 var contentControl = (ContentControl)uiElement;
                 if (contentControl.Visibility != 0)
                     return;
-                FindTextBlocks(RuntimeHelpers.GetObjectValue(contentControl.Content), foundOnes);
+
+                if (contentControl.Content is string || contentControl.Content.GetType().IsValueType)
+                {
+                    foundOnes.Add(new TextProxy(contentControl));    
+                }
+                else
+                {
+                    FindTextBlocks(RuntimeHelpers.GetObjectValue(contentControl.Content), foundOnes);
+                }
             }
             else if (uiElement is Border)
             {
