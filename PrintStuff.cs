@@ -75,7 +75,7 @@ namespace PrintDemo
             return _pages[index - 1];
         }
 
-        private List<UIElement> _pages = new List<UIElement>();
+        private List<Control> _pages = new List<Control>();
 
         private void CreatePrintPreviewPages(object sender, PaginateEventArgs e)
         {
@@ -90,11 +90,11 @@ namespace PrintDemo
                    () => doc.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => doc.InvalidatePreview());
         }
 
-        private static List<UIElement> CreatePages(double maxHeight)
+        public static List<Control> CreatePages(double maxHeight)
         {
             var items = Enumerable.Range(6, 31).ToList();
 
-            var result = new List<UIElement>();
+            var result = new List<Control>();
 
             var page = CreateEmptyPage(1, result);
             result.Add(page);
@@ -105,12 +105,6 @@ namespace PrintDemo
             {
                 GetChildrenContainer(page).Children.Add(new ContentControl { Content = item, FontSize = 50 });
                 page = CheckForNewPage(page, maxHeight, result);
-
-                var path = Windows.Storage.ApplicationData.Current.LocalFolder;
-                var file = path.CreateFileAsync($"{index++}.pdf",
-                      Windows.Storage.CreationCollisionOption.ReplaceExisting).GetAwaiter().GetResult();
-
-              //  ToPDF.XAMLtoPDF(page, file);
             }
 
             return result;
@@ -121,7 +115,7 @@ namespace PrintDemo
             return (Panel)page.FindName("PrintArea");
         }
 
-        private static PrintPage CheckForNewPage(PrintPage page, double maxHeight, List<UIElement> result)
+        private static PrintPage CheckForNewPage(PrintPage page, double maxHeight, List<Control> result)
         {
             var height = CalcUsedHeight(page);
 
@@ -145,7 +139,7 @@ namespace PrintDemo
             return page.DesiredSize.Height;
         }
 
-        private static PrintPage CreateEmptyPage(int page, List<UIElement> pages)
+        private static PrintPage CreateEmptyPage(int page, List<Control> pages)
         {
             return new PrintPage(page, () => pages.Count);
         }

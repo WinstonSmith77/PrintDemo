@@ -7,7 +7,15 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <Button Click="Button_Click">Print</Button>
-    </Grid>
+    <StackPanel>
+        <StackPanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Button Click="PrintClick">Print</Button>
+            <Button Click="PDFClick" >PDF</Button>
+        </StackPanel>
+        <StackPanel x:Name="printStuff">
+            
+        </StackPanel>
+    </StackPanel>
+    
+   
 </Page>

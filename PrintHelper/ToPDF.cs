@@ -199,7 +199,7 @@ namespace PrintHelper
                     ++index;
                 }
             }
-            c1PdfDocument.SaveAsync(file).GetAwaiter().GetResult();
+            c1PdfDocument.SaveAsync(file);
         }
 
         private static void FindTextBlocks(object uiElement, IList<object> foundOnes)

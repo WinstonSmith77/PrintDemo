@@ -26,11 +26,26 @@ namespace PrintDemo
         public MainPage()
         {
             this.InitializeComponent();
+
+            _pages = PrintStuff.CreatePages(2000);
+
+            printStuff.Children.Clear();
+
+            _pages.ForEach(ui => printStuff.Children.Add(ui));
         }
 
-        private  void Button_Click(object sender, RoutedEventArgs e)
+        private List<Control> _pages;
+
+        private  void PrintClick(object sender, RoutedEventArgs e)
         {
             new PrintStuff().Print();
+        }
+
+        private void PDFClick(object sender, RoutedEventArgs e)
+        {
+           
+
+            PDFStuff.Export(_pages);
         }
     }
 }
