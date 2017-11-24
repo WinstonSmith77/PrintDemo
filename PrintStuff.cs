@@ -13,6 +13,8 @@ using Windows.UI.WebUI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Printing;
+using PrintHelper;
+
 
 namespace PrintDemo
 {
@@ -77,31 +79,38 @@ namespace PrintDemo
 
         private void CreatePrintPreviewPages(object sender, PaginateEventArgs e)
         {
-            _printingOptions = e.PrintTaskOptions;
+            //   _printingOptions = e.PrintTaskOptions;
             var doc = GetPrintDoc(sender);
 
-            _pages = CreatePages();
+            _pages = CreatePages(e.PrintTaskOptions.GetPageDescription(0).PageSize.Height);
 
             doc.SetPreviewPageCount(_pages.Count, PreviewPageCountType.Final);
 
-            _invalidatePreview =
-                () => doc.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => doc.InvalidatePreview());
+           _invalidatePreview =
+                   () => doc.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => doc.InvalidatePreview());
         }
 
-        private List<UIElement> CreatePages()
+        private static List<UIElement> CreatePages(double maxHeight)
         {
-            var pageInfo = _printingOptions.GetPageDescription(0);
             var items = Enumerable.Range(6, 31).ToList();
 
             var result = new List<UIElement>();
 
-            var page = CreateEmptyPage(1);
+            var page = CreateEmptyPage(1, result);
             result.Add(page);
+
+            int index = 0;
 
             foreach (int item in items)
             {
                 GetChildrenContainer(page).Children.Add(new ContentControl { Content = item, FontSize = 50 });
-                page = CheckForNewPage(page, pageInfo, result);
+                page = CheckForNewPage(page, maxHeight, result);
+
+                var path = Windows.Storage.ApplicationData.Current.LocalFolder;
+                var file = path.CreateFileAsync($"{index++}.pdf",
+                      Windows.Storage.CreationCollisionOption.ReplaceExisting).GetAwaiter().GetResult();
+
+              //  ToPDF.XAMLtoPDF(page, file);
             }
 
             return result;
@@ -109,20 +118,20 @@ namespace PrintDemo
 
         private static Panel GetChildrenContainer(Page page)
         {
-            return (Panel)(page.FindName("PrintArea"));
+            return (Panel)page.FindName("PrintArea");
         }
 
-        private PrintPage CheckForNewPage(PrintPage page, PrintPageDescription pageInfo, List<UIElement> result)
+        private static PrintPage CheckForNewPage(PrintPage page, double maxHeight, List<UIElement> result)
         {
             var height = CalcUsedHeight(page);
 
-            if (height > pageInfo.PageSize.Height)
+            if (height > maxHeight)
             {
                 var oldItemList = GetChildrenContainer(page).Children;
                 var lastItemOldPage = oldItemList.Last();
                 oldItemList.Remove(lastItemOldPage);
 
-                page = CreateEmptyPage(page.Page + 1);
+                page = CreateEmptyPage(page.Page + 1, result);
                 result.Add(page);
                 GetChildrenContainer(page).Children.Add(lastItemOldPage);
             }
@@ -136,10 +145,9 @@ namespace PrintDemo
             return page.DesiredSize.Height;
         }
 
-        private PrintPage CreateEmptyPage(int page)
+        private static PrintPage CreateEmptyPage(int page, List<UIElement> pages)
         {
-
-            return new PrintPage(page, () => _pages.Count);
+            return new PrintPage(page, () => pages.Count);
         }
 
 
