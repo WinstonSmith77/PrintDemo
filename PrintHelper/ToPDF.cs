@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Storage;
+using Windows.UI;
 using Windows.UI.Text;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -15,12 +17,77 @@ namespace PrintHelper
 {
     public class ToPDF
     {
-        public static void XAMLtoPDF(Control myXAMLcontrol, StorageFile file)
+        public class PDFAdapter
+        {
+            private readonly C1PdfDocument _document;
+            private readonly List<string> _operations = new List<string>();
+
+            public PDFAdapter(C1PdfDocument document)
+            {
+                _document = document;
+            }
+
+            private void AddToLog(params object[] items)
+            {
+                var trace = new StackTrace();
+                var line = trace.GetFrame(1).GetMethod().Name + " ";
+                line = items.Aggregate(line, (current, item) => current + item.GetType() + " " + item + "; ");
+                _operations.Add(line);
+            }
+
+            public Size MeasureString(string text, Font font)
+            {
+                AddToLog(text, font);
+                return _document.MeasureString(text, font);
+            }
+
+            public Size MeasureString(string text, Font font, double width)
+            {
+                AddToLog(text, font, width);
+                return _document.MeasureString(text, font, width);
+            }
+
+            public int DrawString(string text, Font font, Color color, Rect rc, StringFormat sf)
+            {
+                AddToLog(text, font, color, rc, sf);
+                return _document.DrawString(text, font, color, rc, sf);
+            }
+
+            public int DrawString(string text, Font font, Color color, Rect rc)
+            {
+                AddToLog(text, font, color, rc);
+                return _document.DrawString(text, font, color, rc);
+            }
+
+            public void DrawLine(Pen pen, Point pt1, Point pt2)
+            {
+                AddToLog(pen, pt1, pt2);
+                _document.DrawLine(pen, pt1, pt2);
+            }
+
+            public Size PageSize
+            {
+                set
+                {
+                    AddToLog(value);
+                    _document.PageSize = value;
+                }
+            }
+
+            public void Finish()
+            {
+               
+            }
+        }
+
+
+        public static void XAMLtoPDF(Control control, StorageFile file)
         {
             var c1PdfDocument = new C1PdfDocument(PaperKind.Letter);
+            var adapter = new PDFAdapter(c1PdfDocument);
             var list = new List<object>();
-            c1PdfDocument.PageSize = new Size(myXAMLcontrol.ActualWidth, myXAMLcontrol.ActualHeight);
-            FindTextBlocks(myXAMLcontrol, list);
+            adapter.PageSize = new Size(control.ActualWidth, control.ActualHeight);
+            FindTextBlocks(control, list);
             var num1 = checked(list.Count - 1);
             var index = 0;
             while (index <= num1)
@@ -30,7 +97,7 @@ namespace PrintHelper
                 {
                     FrameworkElement frameworkElement = textBlock;
                     var num2 = 0.0;
-                    for (; frameworkElement != null; frameworkElement = (FrameworkElement) frameworkElement.Parent)
+                    for (; frameworkElement != null; frameworkElement = (FrameworkElement)frameworkElement.Parent)
                     {
                         var renderTransform = frameworkElement.RenderTransform;
                         if (renderTransform is TransformGroup transformGroup)
@@ -41,101 +108,97 @@ namespace PrintHelper
                         }
                         else if (renderTransform is RotateTransform)
                         {
-                            num2 -= ((RotateTransform) renderTransform).Angle;
+                            num2 -= ((RotateTransform)renderTransform).Angle;
                         }
                     }
                     var font = new Font(textBlock.FontFamily.Source, textBlock.FontSize, PdfFontStyle.Italic);
-                    var generalTransform = textBlock.TransformToVisual(myXAMLcontrol);
+                    var generalTransform = textBlock.TransformToVisual(control);
                     var point = generalTransform.TransformPoint(new Point(0.0, 0.0));
                     double width;
                     double height;
                     if (textBlock.TextWrapping == TextWrapping.NoWrap)
                     {
-                        width = c1PdfDocument.MeasureString(textBlock.Text, font).Width;
-                        height = c1PdfDocument.MeasureString(textBlock.Text, font).Height;
+                        width = adapter.MeasureString(textBlock.Text, font).Width;
+                        height = adapter.MeasureString(textBlock.Text, font).Height;
                     }
                     else
                     {
                         width = textBlock.ActualWidth + 10.0;
-                        height = c1PdfDocument.MeasureString(textBlock.Text, font, width).Height;
+                        height = adapter.MeasureString(textBlock.Text, font, width).Height;
                     }
                     var rc = new Rect(point.X, point.Y, width, height);
                     if (num2 != 0.0)
-                        c1PdfDocument.DrawString(textBlock.Text, font, ((SolidColorBrush) textBlock.Foreground).Color,
+                        adapter.DrawString(textBlock.Text, font, ((SolidColorBrush)textBlock.Foreground).Color,
                             rc, new StringFormat
                             {
                                 Angle = num2
                             });
                     else
-                        c1PdfDocument.DrawString(textBlock.Text, font, ((SolidColorBrush) textBlock.Foreground).Color,
+                        adapter.DrawString(textBlock.Text, font, ((SolidColorBrush)textBlock.Foreground).Color,
                             rc);
                 }
                 else if (list[index] is Border)
                 {
-                    var border = (Border) list[index];
-                    var generalTransform = border.TransformToVisual(myXAMLcontrol);
+                    var border = (Border)list[index];
+                    var generalTransform = border.TransformToVisual(control);
                     var point = generalTransform.TransformPoint(new Point(0.0, 0.0));
-                    var pointArray = new Point[4]
+                    var pointArray = new[]
                     {
                         new Point(point.X, point.Y),
                         new Point(point.X + border.ActualWidth, point.Y),
                         new Point(point.X + border.ActualWidth, point.Y + border.ActualHeight),
                         new Point(point.X, point.Y + border.ActualHeight)
                     };
-                    var color = ((SolidColorBrush) border.BorderBrush).Color;
+                    var color = ((SolidColorBrush)border.BorderBrush).Color;
                     thickness = border.BorderThickness;
                     if (thickness.Top != 0.0)
                     {
-                        var c1PdfDocument1 = c1PdfDocument;
                         var color1 = color;
                         thickness = border.BorderThickness;
                         var top = thickness.Top;
                         var pen = new Pen(color1, top);
                         var pt1 = pointArray[0];
                         var pt2 = pointArray[1];
-                        c1PdfDocument1.DrawLine(pen, pt1, pt2);
+                        adapter.DrawLine(pen, pt1, pt2);
                     }
                     thickness = border.BorderThickness;
                     if (thickness.Right != 0.0)
                     {
-                        var c1PdfDocument1 = c1PdfDocument;
                         var color1 = color;
                         thickness = border.BorderThickness;
                         var right = thickness.Right;
                         var pen = new Pen(color1, right);
                         var pt1 = pointArray[1];
                         var pt2 = pointArray[2];
-                        c1PdfDocument1.DrawLine(pen, pt1, pt2);
+                        adapter.DrawLine(pen, pt1, pt2);
                     }
                     thickness = border.BorderThickness;
                     if (thickness.Bottom != 0.0)
                     {
-                        var c1PdfDocument1 = c1PdfDocument;
                         var color1 = color;
                         thickness = border.BorderThickness;
                         var bottom = thickness.Bottom;
                         var pen = new Pen(color1, bottom);
                         var pt1 = pointArray[2];
                         var pt2 = pointArray[3];
-                        c1PdfDocument1.DrawLine(pen, pt1, pt2);
+                        adapter.DrawLine(pen, pt1, pt2);
                     }
                     thickness = border.BorderThickness;
                     if (thickness.Left != 0.0)
                     {
-                        var c1PdfDocument1 = c1PdfDocument;
                         var color1 = color;
                         thickness = border.BorderThickness;
                         var left = thickness.Left;
                         var pen = new Pen(color1, left);
                         var pt1 = pointArray[3];
                         var pt2 = pointArray[0];
-                        c1PdfDocument1.DrawLine(pen, pt1, pt2);
+                        adapter.DrawLine(pen, pt1, pt2);
                     }
                 }
                 else if (list[index] is Rectangle)
                 {
-                    var rectangle = (Rectangle) list[index];
-                    var generalTransform = rectangle.TransformToVisual(myXAMLcontrol);
+                    var rectangle = (Rectangle)list[index];
+                    var generalTransform = rectangle.TransformToVisual(control);
                     var point = generalTransform.TransformPoint(new Point(0.0, 0.0));
                     var pointArray1 = new Point[4];
                     var index1 = 0;
@@ -183,22 +246,27 @@ namespace PrintHelper
                     var point4 = new Point(x6, y6);
                     pointArray1[index4] = point4;
                     var pointArray = pointArray1;
-                    var pen1 = new Pen(((SolidColorBrush) rectangle.Stroke).Color, rectangle.StrokeThickness);
-                    pen1.DashStyle = DashStyle.Custom;
-                    pen1.DashPattern = rectangle.StrokeDashArray.ToArray();
-                    var pen2 = new Pen(((SolidColorBrush) rectangle.Stroke).Color, rectangle.StrokeThickness);
-                    pen2.DashStyle = DashStyle.Custom;
-                    pen2.DashPattern = rectangle.StrokeDashArray.ToArray();
-                    c1PdfDocument.DrawLine(pen2, pointArray[0], pointArray[1]);
-                    c1PdfDocument.DrawLine(pen1, pointArray[1], pointArray[2]);
-                    c1PdfDocument.DrawLine(pen2, pointArray[2], pointArray[3]);
-                    c1PdfDocument.DrawLine(pen1, pointArray[3], pointArray[0]);
+                    var pen1 = new Pen(((SolidColorBrush)rectangle.Stroke).Color, rectangle.StrokeThickness)
+                    {
+                        DashStyle = DashStyle.Custom,
+                        DashPattern = rectangle.StrokeDashArray.ToArray()
+                    };
+                    var pen2 = new Pen(((SolidColorBrush)rectangle.Stroke).Color, rectangle.StrokeThickness)
+                    {
+                        DashStyle = DashStyle.Custom,
+                        DashPattern = rectangle.StrokeDashArray.ToArray()
+                    };
+                    adapter.DrawLine(pen2, pointArray[0], pointArray[1]);
+                    adapter.DrawLine(pen1, pointArray[1], pointArray[2]);
+                    adapter.DrawLine(pen2, pointArray[2], pointArray[3]);
+                    adapter.DrawLine(pen1, pointArray[3], pointArray[0]);
                 }
                 checked
                 {
                     ++index;
                 }
             }
+            adapter.Finish();
             c1PdfDocument.SaveAsync(file);
         }
 
@@ -212,7 +280,7 @@ namespace PrintHelper
             }
             else if (uiElement is Panel)
             {
-                var panel = (Panel) uiElement;
+                var panel = (Panel)uiElement;
                 if (panel.Visibility != 0)
                     return;
 
@@ -221,21 +289,21 @@ namespace PrintHelper
             }
             else if (uiElement is UserControl)
             {
-                var userControl = (UserControl) uiElement;
+                var userControl = (UserControl)uiElement;
                 if (userControl.Visibility != 0)
                     return;
                 FindTextBlocks(userControl.Content, foundOnes);
             }
             else if (uiElement is ContentControl)
             {
-                var contentControl = (ContentControl) uiElement;
+                var contentControl = (ContentControl)uiElement;
                 if (contentControl.Visibility != 0)
                     return;
                 FindTextBlocks(RuntimeHelpers.GetObjectValue(contentControl.Content), foundOnes);
             }
             else if (uiElement is Border)
             {
-                var border = (Border) uiElement;
+                var border = (Border)uiElement;
                 if (border.Visibility != 0)
                     return;
                 foundOnes.Add(border);
@@ -245,7 +313,7 @@ namespace PrintHelper
             {
                 if (!(uiElement is Rectangle))
                     return;
-                var rectangle = (Rectangle) uiElement;
+                var rectangle = (Rectangle)uiElement;
                 foundOnes.Add(rectangle);
             }
         }
