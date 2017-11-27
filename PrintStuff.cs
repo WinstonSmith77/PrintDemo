@@ -14,7 +14,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Printing;
 using PrintHelper;
-
+using System.Runtime.InteropServices;
 
 namespace PrintDemo
 {
@@ -22,11 +22,14 @@ namespace PrintDemo
 
     public class PrintStuff
     {
+        private static string  PDFPrinter = "Microsoft Print to PDF";
+
+
         private IPrintDocumentSource _printDocumentSource;
-        private PrintTaskOptions _printingOptions;
 
         public async void Print()
         {
+          
             var manager = PrintManager.GetForCurrentView();
 
             var printDocument = new PrintDocument();
@@ -172,8 +175,6 @@ namespace PrintDemo
                  var allOptions = printDetailedOptions.Options.ToList();
 
                  printDetailedOptions.DisplayedOptions.Clear();
-
-                 var bal = allOptions.Select(item => item.Key).Aggregate("", (result, item) => result + (item + Environment.NewLine));
 
                  foreach (KeyValuePair<string, IPrintOptionDetails> option in allOptions)
                  {

@@ -34,17 +34,17 @@ namespace PrintDemo
             _pages.ForEach(ui => printStuff.Children.Add(ui));
         }
 
-        private List<Control> _pages;
+        private readonly List<Control> _pages;
 
         private  void PrintClick(object sender, RoutedEventArgs e)
-        {
+        {/*
+            var printerNames = Win32Stuff.GetPrinterNames();
+            var result = Win32Stuff.SetDefaultPrinter(printerNames[2]);*/
             new PrintStuff().Print();
         }
 
         private void PDFClick(object sender, RoutedEventArgs e)
         {
-           
-
             PDFStuff.Export(_pages);
         }
     }
