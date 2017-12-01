@@ -47,5 +47,10 @@ namespace PrintDemo
         {
             PDFStuff.Export(_pages);
         }
+
+        private void PNGClick(object sender, RoutedEventArgs e)
+        {
+           DumpToPNG.DumpToFile(_pages.Cast<UIElement>().ToList());
+        }
     }
 }
